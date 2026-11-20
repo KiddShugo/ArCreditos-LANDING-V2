@@ -118,10 +118,13 @@
     function pintar({ animar = true, desde = 0 } = {}) {
       tabs.querySelectorAll('.ctab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === estado.categoria)));
       // en el teléfono las pestañas se deslizan: la elegida queda a la vista
-      if (tabs.scrollWidth > tabs.clientWidth) {
+      // (en la primera carga, sin animación y después de que la página se acomode)
+      const llevar = (suave) => {
         const b = tabs.querySelector('.ctab[aria-pressed="true"]');
-        if (b) tabs.scrollTo({ left: Math.max(0, b.offsetLeft - tabs.offsetLeft - 24), behavior: reduce() ? 'auto' : 'smooth' });
-      }
+        if (b && tabs.scrollWidth > tabs.clientWidth) tabs.scrollTo({ left: Math.max(0, b.offsetLeft - tabs.offsetLeft - 24), behavior: suave && !reduce() ? 'smooth' : 'auto' });
+      };
+      if (tabs.dataset.listo) llevar(true);
+      else { tabs.dataset.listo = '1'; requestAnimationFrame(() => llevar(false)); addEventListener('load', () => llevar(false), { once: true }); }
       if (inQ.value !== estado.q) inQ.value = estado.q;
       btnClear.hidden = !estado.q;
       selOrden.value = estado.orden;
