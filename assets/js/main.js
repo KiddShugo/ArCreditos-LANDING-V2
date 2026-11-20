@@ -156,21 +156,24 @@
   if ('IntersectionObserver' in window) {
     const groups = [
       'main > section:not(.hero) .section-head',
-      '.cats > .cat',
+      '.ctabs > .ctab',
+      '.ctools, .cstatus',
+      '.ccta',
       '.plazos > li',
       '.ejemplos > li',
+      '.perks > .perk',
       '.steps > li',
       '.req',
       '.zonas > li',
-      '.zonas__label, .zonas__mapwrap',
-      '.faq__item',
+      '.zonas__label, .zonas__mapwrap, .zonas__ask',
+      '.acc-group__h, .acc__item',
       '.closing__cta > *',
     ];
     const items = [];
     groups.forEach((sel) => {
-      document.querySelectorAll(sel).forEach((el, i, all) => {
+      document.querySelectorAll(sel).forEach((el, i) => {
         el.classList.add('ar-reveal');
-        const delay = sel.includes('zonas > li') ? i * 30 : i * 90;
+        const delay = sel.includes('zonas > li') ? i * 30 : sel.includes('acc') ? i * 50 : i * 90;
         el.style.setProperty('--ar-delay', `${Math.min(delay, 700)}ms`);
         items.push(el);
       });
@@ -184,4 +187,58 @@
     // al imprimir se muestra todo
     window.addEventListener('beforeprint', () => items.forEach((el) => el.classList.add('is-in')));
   }
+
+  /* 4. Línea de tiempo del proceso: la línea se va completando a medida que se recorre la sección */
+  const tl = document.querySelector('[data-timeline]');
+  if (tl && 'IntersectionObserver' in window) {
+    const pasos = [...tl.children];
+    const marcar = () => {
+      const hechos = pasos.filter((li) => li.classList.contains('is-on')).length;
+      tl.style.setProperty('--tl', String(hechos <= 1 ? 0 : (hechos - 1) / (pasos.length - 1)));
+    };
+    // la línea va del centro del primer número al centro del último
+    const medir = () => {
+      const nums = pasos.map((li) => li.querySelector('.step-num'));
+      const t0 = tl.getBoundingClientRect().top;
+      const c = (el) => { const r = el.getBoundingClientRect(); return r.top - t0 + r.height / 2; };
+      tl.style.setProperty('--tl-top', c(nums[0]) + 'px');
+      tl.style.setProperty('--tl-h', Math.max(0, c(nums[nums.length - 1]) - c(nums[0])) + 'px');
+    };
+    medir();
+    addEventListener('resize', medir, { passive: true });
+    document.fonts?.ready.then(medir);
+    const io = new IntersectionObserver((es) => {
+      es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-on'); io.unobserve(e.target); } });
+      marcar();
+    }, { rootMargin: '0px 0px -30% 0px', threshold: 0.6 });
+    pasos.forEach((li) => io.observe(li));
+    window.addEventListener('beforeprint', () => { pasos.forEach((li) => li.classList.add('is-on')); marcar(); });
+  }
+
+  /* 5. Preguntas frecuentes en acordeón: abre una por vez dentro de cada grupo, con altura animada.
+     Son <details> nativos: sin script siguen funcionando (se abren y cierran solos). */
+  document.querySelectorAll('[data-acc]').forEach((acc) => {
+    const items = [...acc.querySelectorAll('details')];
+    items.forEach((d) => {
+      const sum = d.querySelector('summary');
+      const body = d.querySelector('.acc__body');
+      sum.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (d.open) cerrar(d); else { items.filter((o) => o !== d && o.open).forEach(cerrar); abrir(d); }
+      });
+      function abrir(el) {
+        el.open = true;
+        if (reduce) return;
+        const b = el.querySelector('.acc__body');
+        b.animate([{ height: '0px', opacity: 0 }, { height: b.scrollHeight + 'px', opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.2,.7,.2,1)' });
+      }
+      function cerrar(el) {
+        const b = el.querySelector('.acc__body');
+        if (reduce) { el.open = false; return; }
+        const a = b.animate([{ height: b.scrollHeight + 'px', opacity: 1 }, { height: '0px', opacity: 0 }], { duration: 220, easing: 'ease-in' });
+        a.onfinish = () => { el.open = false; };
+      }
+      void body;
+    });
+  });
 })();
