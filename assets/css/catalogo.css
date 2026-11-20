@@ -389,3 +389,37 @@ dialog.drawer.is-closing .drawer__panel { animation: drawer-out .22s ease-in for
 /* "reducir movimiento": fundidos cortos en lugar de desplazamientos */
 .ar-calm .pm__panel, .ar-calm .drawer__panel { animation: ar-fade .2s ease !important; }
 .ar-calm dialog.is-closing .pm__panel, .ar-calm dialog.is-closing .drawer__panel { animation: ar-fade-out .15s ease forwards !important; }
+
+/* ---------------------------------------------------------------- categorías deslizables (teléfono) */
+.ctabs-wrap { position: relative; }
+.ctabs__more { display: none; }
+@media (max-width: 639px) {
+  .ctabs-wrap::before, .ctabs-wrap::after { content: ""; position: absolute; top: 0; bottom: 8px; z-index: 1; width: 64px; pointer-events: none; transition: opacity .25s ease; }
+  .ctabs-wrap::before { left: calc(-1 * var(--gut)); background: linear-gradient(to right, var(--p-bg) 15%, color-mix(in oklab, var(--p-bg) 0%, transparent)); opacity: 0; }
+  .ctabs-wrap::after { right: calc(-1 * var(--gut)); width: 88px; background: linear-gradient(to left, var(--p-bg) 30%, color-mix(in oklab, var(--p-bg) 0%, transparent)); }
+  .ctabs-wrap.is-scrolled::before { opacity: 1; }
+  .ctabs-wrap:not(.is-scrollable)::after, .ctabs-wrap.is-end::after { opacity: 0; }
+  .ctabs-wrap.is-nudging .ctabs { scroll-snap-type: none; }
+  .ctabs__more {
+    display: grid; place-items: center; position: absolute; z-index: 2; right: calc(12px - var(--gut)); top: calc(50% - 4px); width: 40px; height: 40px;
+    padding: 0; border: 0; background: var(--p-ink); color: var(--p-bg); cursor: pointer; box-shadow: 0 8px 18px -8px rgb(0 0 0 / .55);
+    transform: translateY(-50%); transition: opacity .25s ease, transform .3s var(--ar-ease), visibility 0s;
+  }
+  .ctabs-wrap:not(.is-scrollable) .ctabs__more, .ctabs-wrap.is-end .ctabs__more { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-50%) scale(.8);
+    transition: opacity .25s ease, transform .3s var(--ar-ease), visibility 0s linear .3s; }
+  .ctabs__more.is-bob svg { animation: ctabs-bob .9s ease-in-out 3; }
+}
+@keyframes ctabs-bob { 0%, 100% { transform: none; } 50% { transform: translateX(4px); } }
+
+/* ---------------------------------------------------------------- WhatsApp de la barra del teléfono: pulso */
+.mbar .mbar__wa { position: relative; overflow: visible; }
+.mbar__wa svg { flex: none; }
+.mbar__wa.is-pulse { animation: wa-ring 1.25s ease-out 2; }
+.mbar__wa.is-pulse svg { animation: wa-wiggle .9s ease-in-out; }
+@keyframes wa-ring {
+  0% { box-shadow: 0 0 0 0 rgb(20 20 20 / .5); transform: scale(1); }
+  18% { transform: scale(1.035); }
+  40% { transform: scale(1); }
+  100% { box-shadow: 0 0 0 14px rgb(20 20 20 / 0); transform: scale(1); }
+}
+@keyframes wa-wiggle { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-16deg); } 40% { transform: rotate(13deg); } 60% { transform: rotate(-9deg); } 80% { transform: rotate(5deg); } }

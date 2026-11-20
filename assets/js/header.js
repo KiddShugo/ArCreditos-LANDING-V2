@@ -33,11 +33,30 @@
   let compacto = false, tick = false;
   const mbar = document.querySelector('.mbar');
   const fab = document.querySelector('.fab');
+  /* el botón de WhatsApp de la barra del teléfono "late" cada 7 segundos mientras la barra está a la vista:
+     una onda que sale del botón y el ícono que se sacude. Se detiene cuando la persona ya lo tocó, y no
+     se mueve con "reducir movimiento" activado en el teléfono. */
+  const waBar = mbar?.querySelector('.mbar__wa');
+  let tPulso = 0;
+  const pulsoActivo = () => waBar && !reduce() && !waBar.dataset.usado && mbar.classList.contains('is-on')
+    && !document.documentElement.classList.contains('has-dialog') && !document.documentElement.classList.contains('menu-open') && !document.hidden;
+  function pulsar() {
+    clearTimeout(tPulso);
+    if (!waBar) return;
+    if (pulsoActivo()) { waBar.classList.remove('is-pulse'); void waBar.offsetWidth; waBar.classList.add('is-pulse'); }
+    tPulso = setTimeout(pulsar, 7000);
+  }
+  waBar?.addEventListener('click', () => { waBar.dataset.usado = '1'; waBar.classList.remove('is-pulse'); clearTimeout(tPulso); });
   function medir() {
     tick = false;
     // la barra del teléfono y el botón flotante aparecen cuando el hero (con sus propios botones) ya quedó arriba
     const pasado = scrollY > innerHeight * 0.55;
-    if (mbar) mbar.classList.toggle('is-on', pasado);
+    if (mbar && mbar.classList.contains('is-on') !== pasado) {
+      mbar.classList.toggle('is-on', pasado);
+      clearTimeout(tPulso);
+      // la primera onda llega apenas la barra terminó de aparecer
+      if (pasado && waBar && !waBar.dataset.usado) tPulso = setTimeout(pulsar, 1200);
+    }
     if (fab) fab.classList.toggle('is-away', !pasado);
     const c = desktop.matches && scrollY > UMBRAL;
     if (c !== compacto) { compacto = c; hdr.classList.toggle('is-compact', c); }

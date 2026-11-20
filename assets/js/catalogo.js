@@ -105,6 +105,43 @@
     }).join('');
     selOrden.innerHTML = Object.entries(ORDENES).map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
 
+    /* fila de categorías deslizable (teléfono): bordes difuminados según la posición, flecha para avanzar
+       y, la primera vez que aparece en pantalla, un pequeño deslizamiento de ida y vuelta que muestra que se mueve */
+    const tabsWrap = tabs.parentElement;
+    const tabsMas = $('[data-ctabs-more]', tabsWrap);
+    const marcarBordes = () => {
+      const max = tabs.scrollWidth - tabs.clientWidth;
+      tabsWrap.classList.toggle('is-scrollable', max > 4);
+      tabsWrap.classList.toggle('is-scrolled', tabs.scrollLeft > 4);
+      tabsWrap.classList.toggle('is-end', max <= 4 || tabs.scrollLeft >= max - 4);
+    };
+    tabs.addEventListener('scroll', marcarBordes, { passive: true });
+    tabsWrap.addEventListener('bordes', marcarBordes);
+    addEventListener('resize', marcarBordes, { passive: true });
+    tabsMas?.addEventListener('click', () => tabs.scrollBy({ left: Math.round(tabs.clientWidth * 0.7), behavior: reduce() ? 'auto' : 'smooth' }));
+    let tabsTocadas = false;
+    ['pointerdown', 'touchstart', 'wheel'].forEach((ev) => tabs.addEventListener(ev, () => { tabsTocadas = true; }, { passive: true, once: true }));
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        marcarBordes();
+        if (reduce() || tabsTocadas || !tabsWrap.classList.contains('is-scrollable') || tabsWrap.classList.contains('is-end')) return;
+        setTimeout(() => {
+          if (tabsTocadas) return;
+          const x0 = tabs.scrollLeft;
+          tabsWrap.classList.add('is-nudging');
+          tabs.scrollTo({ left: x0 + 96, behavior: 'smooth' });
+          setTimeout(() => {
+            if (!tabsTocadas) tabs.scrollTo({ left: x0, behavior: 'smooth' });
+            setTimeout(() => tabsWrap.classList.remove('is-nudging'), 600);
+            tabsMas?.classList.add('is-bob');
+          }, 700);
+        }, 450);
+      }, { threshold: 0.9 });
+      io.observe(tabs);
+    }
+
     function pintarTipos() {
       const lista = C.tiposDe(estado.categoria);
       selTipo.innerHTML = `<option value="">Todos los tipos</option>` + lista.map((t) => {
@@ -125,6 +162,7 @@
       };
       if (tabs.dataset.listo) llevar(true);
       else { tabs.dataset.listo = '1'; requestAnimationFrame(() => llevar(false)); addEventListener('load', () => llevar(false), { once: true }); }
+      requestAnimationFrame(() => tabsWrap.dispatchEvent(new Event('bordes')));
       if (inQ.value !== estado.q) inQ.value = estado.q;
       btnClear.hidden = !estado.q;
       selOrden.value = estado.orden;
